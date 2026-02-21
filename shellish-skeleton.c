@@ -356,7 +356,9 @@ int process_command(struct command_t *command) {
     exit(127);
   } else {
     // TODO: implement background processes here
-    wait(0); // wait for child process to finish
+  if (!command->background) {
+      wait(NULL);
+  }
     return SUCCESS;
   }
 }
