@@ -336,22 +336,7 @@ int process_command(struct command_t *command) {
 
     // TODO: do your own exec with path resolving using execv()
     // do so by replacing the execvp call below
-    char path[1024];
-    int result;
-
-    sprintf(path, "/bin/%s", command->name);
-    result = execv(path, command->args);
-
-    if (result == -1) {
-
-      sprintf(path, "/usr/bin/%s", command->name);
-      result = execv(path, command->args);
-
-      if (result == -1) {
-        printf("-%s: %s: command not found\n", sysname, command->name);
-        exit(127);
-      }
-    }
+    execvp(command->name, command->args); // exec+args+path
     printf("-%s: %s: command not found\n", sysname, command->name);
     exit(127);
   } else {
