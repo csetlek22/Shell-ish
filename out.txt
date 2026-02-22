@@ -1,0 +1,5 @@
+out.txt
+shell-ish
+shellish-skeleton.c
+shellish-skeleton.c.save
+test

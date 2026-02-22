@@ -6,6 +6,8 @@
 #include <sys/wait.h>
 #include <termios.h> // termios, TCSANOW, ECHO, ICANON
 #include <unistd.h>
+#include <fcntl.h>      
+#include <sys/stat.h>   
 const char *sysname = "shellish";
 
 enum return_codes {
@@ -336,6 +338,43 @@ int process_command(struct command_t *command) {
 
     // TODO: do your own exec with path resolving using execv()
     // do so by replacing the execvp call below
+
+    // Handle output redirection
+    // Handle input redirection (<)
+    if (command->redirects[0]) {
+        int fd = open(command->redirects[0], O_RDONLY);
+        if (fd < 0) {
+            perror("open failed");
+            exit(1);
+        }
+        dup2(fd, STDIN_FILENO);
+        close(fd);
+    }
+    // Handle append redirection (>>)
+    if (command->redirects[2]) {   // ">>"
+        int fd = open(command->redirects[2],
+                      O_WRONLY | O_CREAT | O_APPEND,
+                      0644);
+        if (fd < 0) {
+            perror("open failed");
+            exit(1);
+        }
+        dup2(fd, STDOUT_FILENO);
+        close(fd);
+    }
+    if (command->redirects[1]) {   // ">"
+        int fd = open(command->redirects[1],
+                      O_WRONLY | O_CREAT | O_TRUNC,
+                      0644);
+        if (fd < 0) {
+            perror("open failed");
+            exit(1);
+        }
+        dup2(fd, STDOUT_FILENO);
+        close(fd);
+    }
+
+
     char path[1024];
     int result;
 
@@ -343,18 +382,18 @@ int process_command(struct command_t *command) {
     result = execv(path, command->args);
 
     if (result == -1) {
+        sprintf(path, "/usr/bin/%s", command->name);
+        result = execv(path, command->args);
 
-      sprintf(path, "/usr/bin/%s", command->name);
-      result = execv(path, command->args);
-
-      if (result == -1) {
-        printf("-%s: %s: command not found\n", sysname, command->name);
-        exit(127);
-      }
+        if (result == -1) {
+            printf("-%s: %s: command not found\n", sysname, command->name);
+            exit(127);
+        }
     }
-    printf("-%s: %s: command not found\n", sysname, command->name);
+
     exit(127);
-  } else {
+}
+  else {
     // TODO: implement background processes here
   if (!command->background) {
       wait(NULL);
