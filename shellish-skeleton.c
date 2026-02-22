@@ -324,7 +324,71 @@ int process_command(struct command_t *command) {
       return SUCCESS;
     }
   }
+  // HANDLE PIPING (only 2 commands for now)
+  if (command->next) {
 
+      int fd[2];
+      pipe(fd);
+
+      pid_t pid1 = fork();
+      if (pid1 == 0) {
+          // FIRST COMMAND (LEFT SIDE)
+
+          dup2(fd[1], STDOUT_FILENO); // write to pipe
+          close(fd[0]);
+          close(fd[1]);
+
+          char path[1024];
+          int result;
+
+          sprintf(path, "/bin/%s", command->name);
+          result = execv(path, command->args);
+
+          if (result == -1) {
+              sprintf(path, "/usr/bin/%s", command->name);
+              result = execv(path, command->args);
+
+              if (result == -1) {
+                  printf("-%s: %s: command not found\n", sysname, command->name);
+                  exit(127);
+              }
+          }
+      }
+
+      pid_t pid2 = fork();
+      if (pid2 == 0) {
+          // SECOND COMMAND (RIGHT SIDE)
+
+          dup2(fd[0], STDIN_FILENO); // read from pipe
+          close(fd[1]);
+          close(fd[0]);
+
+          char path[1024];
+          int result;
+
+          sprintf(path, "/bin/%s", command->next->name);
+          result = execv(path, command->next->args);
+
+          if (result == -1) {
+              sprintf(path, "/usr/bin/%s", command->next->name);
+              result = execv(path, command->next->args);
+
+              if (result == -1) {
+                  printf("-%s: %s: command not found\n", sysname, command->next->name);
+                  exit(127);
+              }
+          }
+      }
+
+      // PARENT
+      close(fd[0]);
+      close(fd[1]);
+
+      wait(NULL);
+      wait(NULL);
+
+      return SUCCESS;
+  }
   pid_t pid = fork();
   if (pid == 0) // child
   {
