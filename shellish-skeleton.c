@@ -324,6 +324,84 @@ int process_command(struct command_t *command) {
       return SUCCESS;
     }
   }
+  if (strcmp(command->name, "cut") == 0) {
+
+    char delimiter = '\t';   // default
+    int fields[100];
+    int field_count = 0;
+
+    // Parse arguments
+    for (int i = 1; i < command->arg_count - 1; i++) {
+
+        if (strcmp(command->args[i], "-d") == 0 ||
+            strcmp(command->args[i], "--delimiter") == 0) {
+
+            delimiter = command->args[i+1][0];
+            i++;
+        }
+
+        else if (strncmp(command->args[i], "-f", 2) == 0 ||
+                 strncmp(command->args[i], "--fields", 8) == 0) {
+
+            char *list;
+
+            if (command->args[i][1] == 'f')
+                list = command->args[i] + 2;
+            else
+                list = command->args[i+1];
+
+            char *token = strtok(list, ",");
+
+            while (token) {
+                fields[field_count++] = atoi(token);
+                token = strtok(NULL, ",");
+            }
+
+            if (command->args[i][1] != 'f')
+                i++;
+        }
+    }
+
+    // Read lines from stdin
+    char *line = NULL;
+    size_t len = 0;
+
+    while (getline(&line, &len, stdin) != -1) {
+
+        int current_field = 1;
+        char *start = line;
+        char *ptr = line;
+
+        while (1) {
+
+            if (*ptr == delimiter || *ptr == '\n' || *ptr == '\0') {
+
+                for (int j = 0; j < field_count; j++) {
+                    if (current_field == fields[j]) {
+
+                        fwrite(start, 1, ptr - start, stdout);
+
+                        if (j != field_count - 1)
+                            printf("%c", delimiter);
+                    }
+                }
+
+                current_field++;
+                start = ptr + 1;
+            }
+
+            if (*ptr == '\0')
+                break;
+
+            ptr++;
+        }
+
+        printf("\n");
+    }
+
+    free(line);
+    return SUCCESS;
+}
   // HANDLE PIPING (only 2 commands for now)
   if (command->next) {
 
