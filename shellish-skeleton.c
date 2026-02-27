@@ -325,6 +325,19 @@ int process_command(struct command_t *command) {
     }
   }
             
+
+  if (strcmp(command->name, "chatroom") == 0) {
+        char path[1024];
+        sprintf(path, "./%s", command->name);
+        
+        int result = execv(path, command->args);
+        
+        if (result == -1) {
+            printf("-%s: %s: command not found or not compiled\n", sysname, command->name);
+            exit(127);
+        }
+    }
+      
   if (strcmp(command->name, "roll") == 0) {
       char script_cmd[1024];
 
