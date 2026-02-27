@@ -324,6 +324,20 @@ int process_command(struct command_t *command) {
       return SUCCESS;
     }
   }
+            
+  if (strcmp(command->name, "roll") == 0) {
+      char script_cmd[1024];
+
+      if (command->args[1] != NULL) {
+          sprintf(script_cmd, "./roll.sh %s", command->args[1]);
+      } else {
+
+          sprintf(script_cmd, "./roll.sh");
+      }
+      system(script_cmd);
+      return SUCCESS;
+  }
+
   if (strcmp(command->name, "cut") == 0) {
 
     char delimiter = '\t';   // default
